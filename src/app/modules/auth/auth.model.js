@@ -9,3 +9,7 @@ exports.createUser = async (userData) => {
 exports.findUserByEmail = async (email) => {
     return user.findUnique({ where: { email } });
 };
+
+exports.findUserByMobile = async (mobileNo) => {
+    return user.findUnique({ where: { mobileNo } });
+};

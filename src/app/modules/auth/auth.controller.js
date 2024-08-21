@@ -2,11 +2,21 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const authModel = require('./auth.model');
+const prisma = require('../../../config/database');
 
 //destructure the functions from the libraries
 const { hash, compare } = bcrypt;
 const { sign } = jwt;
 const { createUser, findUserByMobile } = authModel;
+const { user } = prisma;
+
+// Function to update the rememberMe field in the database
+const updateUserRememberMe = async (userId, rememberMe) => {
+    await user.update({
+        where: { id: userId },
+        data: { rememberMe },
+    });
+};
 
 exports.register = async (req, res, next) => {
     const { firstName, lastName, mobileNo, email, password, rememberMe } = req.body;
@@ -28,6 +38,7 @@ exports.register = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
     const { mobileNo, password, rememberMe } = req.body;
+
     try {
         const user = await findUserByMobile(mobileNo);
         if (!user) {
@@ -38,6 +49,9 @@ exports.login = async (req, res, next) => {
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
+
+        // Update rememberMe status in the database
+        await updateUserRememberMe(user.id, rememberMe);
 
         const token = sign({ id: user.id }, process.env.JWT_SECRET, {
             expiresIn: rememberMe ? '7d' : '1d',
