@@ -1,9 +1,9 @@
 const express = require('express');
 const dotenv = require('dotenv');
+dotenv.config();
+
 // Import routes
 const authRoutes = require('./modules/auth/auth.routes');
-
-dotenv.config();
 
 const app = express();
 app.use(express.json());
