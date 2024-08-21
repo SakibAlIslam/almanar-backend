@@ -62,3 +62,30 @@ exports.login = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.changePassword = async (req, res, next) => {
+    const { oldPassword, newPassword } = req.body;
+    const {userId} = req;
+
+    try {
+        const user = await user.findUnique({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const isMatch = await compare(oldPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const hashedPassword = await hash(newPassword, 10);
+        await user.update({
+            where: { id: userId },
+            data: { password: hashedPassword },
+        });
+
+        res.status(200).json({ message: 'Password updated successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
