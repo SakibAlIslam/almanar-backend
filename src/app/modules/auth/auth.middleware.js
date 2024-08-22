@@ -5,9 +5,10 @@ exports.verifyToken = (req, res, next) => {
     if (!token) {
         return res.status(403).send({ message: 'No token provided!' });
     }
+    const newToken = token.split(' ')[1]; // Split the token to remove Bearer and get the second part of the token
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        console.log('token', token);
+    jwt.verify(newToken, process.env.JWT_SECRET, (err, decoded) => {
+        console.log('newToken', newToken);
         if (err) {
             if (err.name === 'TokenExpiredError') {
                 return res.status(401).send({ message: 'Token expired!' });

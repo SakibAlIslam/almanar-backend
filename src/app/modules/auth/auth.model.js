@@ -6,6 +6,10 @@ exports.createUser = async (userData) => {
     return user.create({ data: userData });
 };
 
+exports.getSingleUser = async (userId) => {
+    return user.findUnique({ where: { id: userId } });
+};
+
 exports.findUserByEmail = async (email) => {
     return user.findUnique({ where: { email } });
 };

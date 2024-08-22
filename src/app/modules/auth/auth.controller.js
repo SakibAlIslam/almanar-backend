@@ -6,7 +6,7 @@ const authModel = require('./auth.model');
 //destructure the functions from the libraries
 const { hash, compare } = bcrypt;
 const { sign } = jwt;
-const { createUser, findUserByMobile, updateUserRememberMe, updatePassword } = authModel;
+const { createUser, getSingleUser, findUserByMobile, updateUserRememberMe, updatePassword } = authModel;
 
 exports.register = async (req, res, next) => {
     const { firstName, lastName, mobileNo, email, password, rememberMe } = req.body;
@@ -58,7 +58,7 @@ exports.changePassword = async (req, res, next) => {
     const {userId} = req;
 
     try {
-        const user = await user.findUnique({ where: { id: userId } });
+        const user = await getSingleUser(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -72,6 +72,25 @@ exports.changePassword = async (req, res, next) => {
         updatePassword(userId, hashedPassword);
 
         res.status(200).json({ message: 'Password updated successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.forgetPassword = async (req, res, next) => {
+    const { mobileNo, newPassword } = req.body;
+
+    try {
+        const user = await findUserByMobile(mobileNo);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const hashedPassword = await hash(newPassword, 10);
+        updatePassword(user.id, hashedPassword);
+
+        res.status(200).json({ message: 'New password updated successfully' });
     } catch (error) {
         next(error);
     }
