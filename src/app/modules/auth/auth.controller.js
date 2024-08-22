@@ -2,21 +2,11 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const authModel = require('./auth.model');
-const prisma = require('../../../config/database');
 
 //destructure the functions from the libraries
 const { hash, compare } = bcrypt;
 const { sign } = jwt;
-const { createUser, findUserByMobile } = authModel;
-const { user } = prisma;
-
-// Function to update the rememberMe field in the database
-const updateUserRememberMe = async (userId, rememberMe) => {
-    await user.update({
-        where: { id: userId },
-        data: { rememberMe },
-    });
-};
+const { createUser, findUserByMobile, updateUserRememberMe, updatePassword } = authModel;
 
 exports.register = async (req, res, next) => {
     const { firstName, lastName, mobileNo, email, password, rememberMe } = req.body;
@@ -45,7 +35,7 @@ exports.login = async (req, res, next) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
@@ -79,10 +69,7 @@ exports.changePassword = async (req, res, next) => {
         }
 
         const hashedPassword = await hash(newPassword, 10);
-        await user.update({
-            where: { id: userId },
-            data: { password: hashedPassword },
-        });
+        updatePassword(userId, hashedPassword);
 
         res.status(200).json({ message: 'Password updated successfully' });
     } catch (error) {
