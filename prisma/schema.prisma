@@ -4,6 +4,19 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// Key Points:
+// 1. User model has relationships with CourseComments, LessonComments, LessonActivities, CourseEnrollments, and Payments.
+// 2. Course model contains the main course information and links to Lecturers, Lessons, CourseMaterials, CourseActivities, CourseComments, and CourseEnrollments.
+// 3. Lesson model contains the lesson information, including the link to the video and the lecturer who created it.
+// 4. Lecturer model handles the lecturers who create courses and lessons.
+// 5. CourseMaterial stores additional materials related to a course.
+// 6. CourseActivity keeps track of user interactions with courses.
+// 7. CourseComment and LessonComment allow users to comment on courses and lessons.
+// 8. LessonActivity tracks user's progress on individual lessons.
+// 9. CourseEnrollment manages the relationship between users and the courses they are enrolled in.
+// 10. Payment handles course payments.
+
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -18,9 +31,204 @@ model User {
   firstName  String
   lastName   String
   mobileNo   String   @unique
-  email      String   @unique
+  email      String?   @unique
   password   String
   rememberMe Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  courseComments CourseComment[]
+  lessonComments LessonComment[]
+  lessonActivities LessonActivity[]
+  courseEnrollments CourseEnrollment[]
+  payments Payment[]
+
+  BookComment BookComment[]
+  BookEnrollment BookEnrollment[]
+}
+
+model Book {
+  id            Int      @id @default(autoincrement())
+  title         String
+  author        String
+  description   String
+  price         Float
+  discountPrice Float?
+  bookType      String   // 'paid' or 'free'
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bookComments  BookComment[]
+  bookEnrollments BookEnrollment[]
+  payments      Payment[]
+}
+
+
+model Course {
+  id            Int              @id @default(autoincrement())
+  name          String
+  description   String
+  price         Float
+  discountPrice Float?
+  courseType    String            // 'paid' or 'free'
+  courseAudience Json              // Array of audiences
+  FAQ            Json              // Array of FAQs
+  courseOutcomes Json              // Array of outcomes
+  lecturerId    Int
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  lecturer      Lecturer         @relation(fields: [lecturerId], references: [id])
+  lessons       Lesson[]
+  courseMaterials CourseMaterial[]
+  courseComments CourseComment[]
+  courseActivities CourseActivity[]
+  courseEnrollments CourseEnrollment[]
+
+  Payment Payment[]
+}
+
+model Lesson {
+  id            Int              @id @default(autoincrement())
+  courseId      Int              
+  videoId       String           // YouTube video ID
+  title         String
+  duration      Int              // Duration in seconds
+  isCompleted   Boolean          @default(false)
+  lecturerId    Int              
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  course        Course           @relation(fields: [courseId], references: [id])
+  lecturer      Lecturer         @relation(fields: [lecturerId], references: [id])
+  lessonComments LessonComment[]
+  lessonActivities LessonActivity[]
+}
+
+model Lecturer {
+  id            Int              @id @default(autoincrement())
+  name          String
+  mobileNo      String            @unique
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  courses       Course[]
+  lessons       Lesson[]
+}
+
+model CourseMaterial {
+  id            Int              @id @default(autoincrement())
+  courseId      Int              
+  notes         String           // File path to PDF/ZIP
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  course        Course           @relation(fields: [courseId], references: [id])
+}
+
+model CourseActivity {
+  id            Int              @id @default(autoincrement())
+  courseId      Int              
+  lastPlayed    Int?             // Last played lesson ID
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  course        Course           @relation(fields: [courseId], references: [id])
+}
+
+model CourseComment {
+  id            Int              @id @default(autoincrement())
+  courseId      Int              
+  userId        Int              
+  comment       String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  course        Course           @relation(fields: [courseId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
+}
+
+model LessonComment {
+  id            Int              @id @default(autoincrement())
+  lessonId      Int              
+  userId        Int              
+  comment       String
+  reply         Json?            // Array of replies
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  lesson        Lesson           @relation(fields: [lessonId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
+}
+
+model BookComment {
+  id            Int      @id @default(autoincrement())
+  bookId        Int      
+  userId        Int      
+  comment       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  book          Book     @relation(fields: [bookId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model LessonActivity {
+  id            Int              @id @default(autoincrement())
+  lessonId      Int              
+  userId        Int              
+  watchTime     Int              // In seconds
+  volume        Int              // Volume level
+  lastWatchTime Int              // Last watched time in seconds
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  lesson        Lesson           @relation(fields: [lessonId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
+}
+
+model CourseEnrollment {
+  id            Int              @id @default(autoincrement())
+  courseId      Int              
+  userId        Int              
+  paymentId     Int?             // Foreign key for payments
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  course        Course           @relation(fields: [courseId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
+  payment       Payment?         @relation(fields: [paymentId], references: [id]) // Optional
+}
+
+model BookEnrollment {
+  id            Int              @id @default(autoincrement())
+  bookId        Int              
+  userId        Int              
+  paymentId     Int?             // Foreign key for payments
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  book          Book             @relation(fields: [bookId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
+  payment       Payment?         @relation(fields: [paymentId], references: [id]) // Optional
+}
+
+model Payment {
+  id            Int      @id @default(autoincrement())
+  courseId      Int?     // Optional foreign key for courses
+  bookId        Int?     // Optional foreign key for books
+  userId        Int
+  transactionId String
+  bankAccount   String
+  paymentMethod String   // payment method (e.g., 'Mobile-banking' or 'Bank')
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  course           Course?            @relation(fields: [courseId], references: [id]) // Optional
+  book             Book?              @relation(fields: [bookId], references: [id]) // Optional
+  user             User               @relation(fields: [userId], references: [id])
+  CourseEnrollment CourseEnrollment[]
+  BookEnrollment   BookEnrollment[]
 }
