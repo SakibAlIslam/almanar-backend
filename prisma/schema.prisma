@@ -72,7 +72,7 @@ model Course {
   discountPrice Float?
   courseType    String            // 'paid' or 'free'
   courseAudience Json              // Array of audiences
-  FAQ            Json              // Array of FAQs
+  faq            Json              // Array of FAQs
   courseOutcomes Json              // Array of outcomes
   lecturerId    Int
   createdAt     DateTime          @default(now())
