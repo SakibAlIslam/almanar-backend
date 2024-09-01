@@ -39,12 +39,13 @@ model User {
 
   courseComments CourseComment[]
   lessonComments LessonComment[]
+  courseActivities CourseActivity[]
   lessonActivities LessonActivity[]
   courseEnrollments CourseEnrollment[]
   payments Payment[]
 
-  BookComment BookComment[]
-  BookEnrollment BookEnrollment[]
+  bookComments      BookComment[]
+  bookEnrollments   BookEnrollment[]
 }
 
 model Book {
@@ -103,6 +104,8 @@ model Lesson {
   lecturer      Lecturer         @relation(fields: [lecturerId], references: [id])
   lessonComments LessonComment[]
   lessonActivities LessonActivity[]
+
+  CourseActivity CourseActivity[]
 }
 
 model Lecturer {
@@ -128,12 +131,17 @@ model CourseMaterial {
 
 model CourseActivity {
   id            Int              @id @default(autoincrement())
+  userId        Int
   courseId      Int              
-  lastPlayed    Int?             // Last played lesson ID
+  lastPlayedId    Int?             // Last played lesson ID
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
   course        Course           @relation(fields: [courseId], references: [id])
+  User          User             @relation(fields: [userId], references: [id])
+  lastPlayed    Lesson?          @relation(fields: [lastPlayedId], references: [id])
+
+  @@unique([userId, courseId])  // Ensure a user can only have one CourseActivity per course
 }
 
 model CourseComment {
@@ -177,9 +185,9 @@ model LessonActivity {
   id            Int              @id @default(autoincrement())
   lessonId      Int              
   userId        Int              
-  watchTime     Int              // In seconds
-  volume        Int              // Volume level
-  lastWatchTime Int              // Last watched time in seconds
+  watchTime     Int              // In seconds, could add a range validation in the application layer
+  volume        Int              // Volume level, 0-100
+  lastWatchTime Int              // Last watched time in seconds, should be <= lesson duration
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
@@ -220,9 +228,11 @@ model Payment {
   courseId      Int?     // Optional foreign key for courses
   bookId        Int?     // Optional foreign key for books
   userId        Int
-  transactionId String
-  bankAccount   String
-  paymentMethod String   // payment method (e.g., 'Mobile-banking' or 'Bank')
+  address       String?   // Address for physical goods
+  transactionId String?  @unique  // Transaction ID should be unique
+  bankAccount   String?
+  paymentMethod String?   // payment method (e.g., 'Mobile-banking' or 'Bank')
+  purchase_amount        Float
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now())
 
